@@ -1,0 +1,341 @@
+---
+title: "Analyzing Data on Individuals Killed by Police-Related Incidents in America in (2007-2017)"
+
+author: "Julia Lee, Selina Husain, Elisabeth Shannon"
+date: "12/16/2017"
+output: oilabs::lab_report
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(oilabs)
+library(mosaic)
+library(dplyr)
+library(ggplot2)
+library(oilabs)
+```
+
+## Abstract 
+
+Police-related deaths are an increasing occurrence that has become an epidemic in the United States. The purpose of this project was to conduct a statistical study on a unique topic. In our statistical analysis, we examine data specifically from the year 2015 to make a prediction about a population for individuals killed by police-related incidents in America within the last ten years (2007-2017). The data tested was compiled by the fivethirtyeight website using the Guardian’s database on police killings and census data from the American Community Survey. Our main objective is to investigate how the age of the victims involved in police killings are affected by their demographics and whether or not they were armed during that time. Using various skills learned in SDS 220 regarding data analysis, visualization, and statistical inference we were able to interpret our data though chi-square tests, hypothesis tests, ANOVA tests for association, confidence intervals, and multiple regression models. Through data analysis, we found that the race and age of an individual killed are associated. We were also able to show that the mean age of an individual killed by police is 95% likely between 36 and 39 years old. Our data show that we do not have strong enough statistical evidence to conclude that race or ethnicity of a person killed and whether or not the person was unarmed when they were killed police are associated. 
+
+
+## Introduction
+
+Over half of all police killings in 2015 were wrongly classified as not having been the result of interactions with officers (Lartey, 2017). Individuals killed in the hands of police officers have been on the rise in recent years. In a Harvard study based on data from the Guardian, it has been found that government databases seriously undercount the number of people killed by police (Lartey, 2017). The dataset, kept by the Centers for Disease Control and Prevention (CDC), was found to have misclassified 55.2% of all police killings, with errors appearing disproportionately in low-income jurisdictions (Lartey, 2017). Federal databases have not done a good job at keeping track of police-related deaths. Other federal databases, including the Bureau of Justice Statistics’ (BJS) arrest-related death count and the FBI’s supplementary homicide reports were criticised for severely undercounting police-related deaths (Lartey, 2017). James Comey, the former head of FBI, has said that it is embarrassing and ridiculous that the federal government has no better information on police shootings than databases by news outlets (Tran, 2015). 
+
+In an attempt to resolve this predicament, US attorney general, Loretta Lynch, issued a pilot open source program to count the number of killings by police around the nation (Tran, 2015). Thus far, it is the most comprehensive official effort to accurately record the amount of deaths by US police (Tran, 2015). The government is trying to improve its data. In order to find deaths that were missing from officials counts, researchers used automated searches to identify media articles and websites that may contain information on arrest-related deaths, including shootings, other intentional killings, suicides, accidents and deaths by natural causes (Bialik, 2016). The data was then sorted manually to identify ones to investigate further and researchers used contacts from the Bureau of Justice Statistics with over 18,000 local law enforcement agencies across the country to search further than the non-governmental efforts can (Bialik, 2016). They also contacted local law-enforcement agencies and medical examiners or coroners involved with the deaths to confirm that the deaths actually happened and determined whether or not they should be counted. They furthermore asked these agencies whether there had been any deaths that were not reflected in social media or news outlet accounts (Bialik, 2016). This method allowed them to estimate how many deaths their media-based counts were missing. An approach like this provides a good way of improving their data.
+
+	It is important that the government has a realistic estimate of killings by police to hold those who are responsible accountable. The lives of innocent people are lost because of confrontations with police officers which is why being able to get a decent count is imperative. These incidents all cause people to distrust police. The purpose of our statistical analysis is to examine police killings data to make a prediction about a population of individuals killed by police-related incidents in America within the last ten years (2007-2017). This will allow us to consider how the demographics and whether or not a person was armed affects their chances of being killed in a police confrontation.
+
+
+
+## Data 
+The Guardian launched “The Counted,” an interactive database of Americans who were killed by police in 2015. The Guardian built its data set by combining media coverage, reader submissions and open-sourced efforts such as Fatal Encounters and Killed by Police. The Guardian then verified the incidents with its own reporting; it calls its data “verified crowdsourced.” It includes demographic information on those killed, such as age, sex and race as well as basic details on the incidents themselves. A polling aggregation website called fivethirtyeight then linked entries from the Guardian's database on police killings to census data from the American Community Survey from June 2015 to create a data set with more variables.  
+We then used this data set as the basis of our project. For our project, we focused on the variables of “age”, “gender”, “race/ethnicity”, “weaponed”,  “region,” and “pov” (poverty). We created many explanatory variables for our response variables. We created a new categorical variable called “region” where we sorted different states into four regions: “East,” “South,” “West,” and “Midwest.” We used the variable “race/ethnicity” of the deceased, and modified it so we created a categorical variable called “Other”, which includes Unknown, Asian, Native American, and Pacific Islander.  We created this data because the categories’ sample sizes were too small. This can be a potential bias because even though this category is small it doesn’t mean it is not important. This is also true with categories with large sample sizes. “Race/ethnicity” also includes Black, White, and Hispanic/Latino with large sample sizes. We also had the categorical variable of gender. The dataset only used male and female even though people can identify as something else. We also looked at the numerical variable of the poverty rate of the city where the killing took place. This rate was out of 100% and ranged from 12.4% to 79.2% after only including the variables we needed for our project. 
+    
+     We created some response variables as well.  We created the new binary variable called “weaponed”. Then we used the already existing categorical variable “armed” and sorted all the cases where we had assigned cases that had “no”, “unknown” and “disputed” under armed and sorted them as true for a binary variable. The rest of the cases were put under false. We also used the variable “weaponed” as an explanatory variable to predict age. Age of the deceased is a numerical response variable. The deceased ranged from 16-87 years old after adjusting for our project variables. These explanatory variables helped us identify the age group and whether or not the victim was armed in police killings. We had some potential biases in our data set. The data was publically crowdsourced and compiled by the Guardian. The public is notoriously biased and unreliable. The Guardian had to crowdsource because “the US government has no comprehensive record of the number of people killed by law enforcement” (The Guardian).
+
+
+
+
+```{r, echo=FALSE}
+
+library(readr)
+police_killings <- read_csv("~/police_killings.csv")
+police_killings_clean <- police_killings %>%
+select(c(month, state_fp, gender, city, armed, age, pov, state, share_black, share_white, raceethnicity))
+```
+
+```{r }
+police_killings_clean$raceethnicity[police_killings_clean$raceethnicity %in% c("Asian/Pacific Islander","Native American","Unknown")]<-"Other"
+
+police_killings_clean<-mutate(police_killings_clean, region = ifelse(state %in% c("MA","PA", "NJ", "NY", "CT", "DC", "ME", "DE", "NH", "VT",  "VA", "NC", "SC", "GA", "FL", "RI", "MD"), "East", ifelse(state %in% c("WA", "OR", "CA", "AK", "HI", "NV", "UT", "WY","AZ", "CO", "ID","NM", "MT" ),"West", ifelse(state %in% c("ND", "SD", "IA", "KS", "IL", "WI", "MN", "NE", "OH", "MO", "MI", "WV"),"MidWest", "South" ))))
+
+police_killings_clean<-mutate(police_killings_clean, politics = ifelse(state %in% c("MA", "NJ", "NY", "CT", "DC", "ME", "DE", "NH", "VT",  "VA","RI", "MD","IL", "MN","WA", "OR", "CA", "HI", "NV","CO","NM"),"Clinton","Trump"))
+
+police_killings_clean$age<-as.numeric(police_killings_clean$age)
+police_killings_clean$pov<-as.numeric(police_killings_clean$pov)
+police_killings_clean$share_black<-as.numeric(police_killings_clean$share_black)
+police_killings_clean$share_white<-as.numeric(police_killings_clean$share_white)
+
+police_killings_black<-subset(police_killings_clean, raceethnicity == "Black")
+
+police_killings_clean<-police_killings_clean%>%
+  mutate (weaponed= ifelse((armed=="Other" |armed=="Disputed"| armed=="No"|armed=="Uknown" ), FALSE, TRUE))
+
+
+
+
+```
+
+```{r}
+glimpse(police_killings_clean)
+```
+
+## Methods
+
+$\textbf{1. 95% Confidence Intervals}$
+
+We want to get an idea of the what mean age range of the population of people killed by police is. We will construct a 95% confidence interval for the mean age of people killed by police. We also want to get an idea of the age range of blacks killed by police.  We will construct a 95% confidence interval for the mean age of people who were black and killed by police. Our final confidence interval is a 95% confidence interval for the true difference between the mean age of those who were armed and mean age of those who were unarmed who were killed by police. 
+
+
+$\textbf {2. Hypothesis tests}$
+
+$\textbf {Hypothesis Test: Difference in proportions of unarmed women and unarmed men:}$
+ 
+ We want to see if there is a difference in the proportions between unarmed men and unarmed women. So we will conduct a hypothesis test for difference in proportions.
+
+Our null hypothesis is that the proportion of men who were unarmed when killed by police is the same as the proportion of women who were unarmed when killed by police 
+Null hypothesis: $P_{unarmed men}- P_{unarmed women}  = 0$ 
+
+Our alternative hypothesis is that the the proportion of men who were unarmed when killed by police is the different than the proportion of women who were unarmed when killed by police. 
+
+Alternative hypothesis: $P_{unarmed men} - P_{unarmed women} \neq 0$
+
+ $\textbf{Hypothesis test: [Age] vs. [Whether or not Armed]}$
+ 
+ We want to find out if there is a difference between the average age of those who were killed by police who were unarmed and the average age of those who were armed when killed by police. So we will conduct a hypothesis test for difference in means.
+ 
+H_0: $\mu_{noweapon} - \mu_{weapon}=0$
+Null: There exists no difference between the average age of those who were killed by police who were unarmed and the average age of those who were armed when killed by police.
+
+H_a: $\mu_{noweapon} − \mu_{weapon} \neq 0$
+ Alternative: There exists a difference between the average age of those who were killed by police who were unarmed and the average age of those who were armed when killed by police.
+
+
+$\textbf{Hypothesis test: [Age] vs. [Gender]}$
+  We want to find out if there exists a difference between the average age of those who were killed by police who were female and the average age of those who were male when killed by police. So we will conduct a hypothesis test for difference in means
+
+H_0: $\mu_{Female} - \mu_{Male}=0$
+
+Null: There exists no difference between the average age of those who were killed by police who were female and the average age of those who were male when killed by police.
+
+H_a: $\mu_{Female} − \mu_{Male} \neq 0$
+
+Alternative: There exists a difference between the average age of those who were killed by police who were female and the average age of those who were male when killed by police.
+
+$\textbf {Simple Linear Regression Model}$
+We did a simple linear regression model to predict age using the poverty rate of where the person was killed.
+
+$\textbf{4. Chi-Square Tests}$
+
+$\textbf {CHI-Square Test for  Region and Whether or not person was armed:}$
+
+We want to find out whether or not the region of where the person was killed and whether or not the person was armed are associated. We will do a chi-square test between 2 categorical variables. 
+ Null: Region of where the killing took place and whether or not the person was weaponed when they were killed are independent.  
+Alternative:  Region and whether or not the person was weaponed when they were killed are associated. 
+
+$\textbf {CHI-Square Test for Race/Ethnicity  and Whether or not person was armed:}$
+We want to find out whether or not the race/ethnicity of where the person was killed and whether or not the person was armed are associated. We will do a chi-square test between 2 categorical variables. 
+ Null: The race/ethnicity and whether or not the person was weaponed when they were killed are independent.  
+Alternative: The race/ethnicity  and whether or not the person was weaponed when they were killed are associated. 
+
+$\textbf{5. Anova Tests}$
+
+$\textbf{Anova Test  for age and race/ethnicity:}$
+
+We did an anova test to see the difference between 2 independent means. One of our variables is numerical while another is categorical. We are looking at the difference between mean age and race/ethnicity of those killed by police.
+
+$\textit {Null Hypothesis:}$
+There is no difference in mean age of those who were killed by police based on ethnic/racial groups. 
+
+$\textit {Alternative Hypothesis:}$ 
+
+At least one ethnic/racial group has a statistically significant difference mean age than the other groups 
+
+$\textbf{Anova test for race/ethnicity and poverty rate:}$
+
+We are looking at the difference between race/ethnicity and poverty rate of those killed by police.
+
+ $\textit {Null Hypothesis:}$ 
+ 
+ There is no difference in mean poverty rate of those who were killed by police based on ethnic/racial groups. 
+
+$\textit{Alternative Hypothesis:}$ 
+
+At least one ethnic/racial group has a statistically significant difference mean poverty rate than the other groups 
+
+$\textbf{6. Multiple regression model}$
+  
+  We created a regression model to try to predict the age of the people killed by police using  race/ethnicity of the person, the region of the country where the killing took place, the gender of the person, and whether or not they were weaponed. We did this to see which of these factors are associated with age when adjusted for the others.  Our reference variables for the model is  when  gender = female and race/ethnicity = black and region= east and weaponed=FALSE  
+
+
+
+## Results 
+
+$\textbf {95% CI for mean age:}$
+```{r, echo=FALSE}
+inference( age, data = police_killings_clean, statistic = "mean", type = "ci", 
+          method = "theoretical", order = c(0, 1))
+```
+We are 95% confident that the true  mean age of people killed by police in the U.S. in 2015  is between 36.18 and 38.55 years old. 
+
+$\textbf{95% CI for the mean age of people who were black and killed by police:}$
+
+```{r, echo=FALSE}
+inference( age, data = police_killings_black, statistic = "mean", type = "ci", 
+          method = "theoretical", order = c(0, 1))
+```
+We are 95% sure that the true mean of people who were black and killed by police is  between 32.01 and 36.00 years old.  
+
+$\textbf{95% Confidence interval for difference in mean age between armed and unarmed:}$
+
+```{r, echo=FALSE}
+inference(y = age, x = weaponed, data = police_killings_clean, statistic = "mean", type = "ci", 
+          method = "theoretical", order = c(0, 1))
+```
+We are 95% confident that  the true difference  between the mean age of those who were armed and mean age of those who were unarmed who were killed by police for our population is between -4.66 and 1.01 years. 0 is included in our interval so this means that it is  very possible that there is no difference in mean  age based on whether or not the person is weaponed.
+
+$\textbf {Hypothesis Test: Difference in proportions of unarmed women and unarmed men:}$ 
+
+```{r, echo=FALSE}
+table( police_killings_clean$weaponed,police_killings_clean$gender)  
+table7<-table(police_killings_clean$weaponed,police_killings_clean$gender)
+addmargins(table7)
+res <- prop.test(x = c(4, 126), n = c(22, 445))
+res
+```
+
+95% confidence interval: We are 95% confident that the difference between the proportion of women who were unarmed and the proportion of men who were unarmed is between  -0.292 and  0.089.
+
+Hypothesis test: We do not have enough evidence (at the 5% Significant level) that there is a difference between the proportion of  unarmed women killed by police and the proportion of unarmed men killed by police. We do not have enough evidence that the proportion of unarmed individuals that were killed by police  that  is significantly different between men and women
+ 
+$\textbf{Hypothesis test: [Age] vs. [Whether or not Armed]}$
+```{r, echo=FALSE}
+ inference(y = age, x = weaponed, data = police_killings_clean, statistic = "mean", type = "ht", null = 0,  alternative = "twosided", method = "theoretical")
+```
+
+There is not enough statistically significant (at the 5% level) evidence for us to reasonably conclude that there is a difference between the average age of  those who were killed by police who were unarmed and the average age of those who were armed when killed by police.
+
+
+$\textbf{Hypothesis test: [Age] vs. [Gender]}$
+```{r, echo=FALSE}
+ inference(y = age, x = gender, data = police_killings_clean, statistic = "mean", type = "ht", null = 0,  alternative = "twosided", method = "theoretical")
+```
+There is not enough statistically significant (at the 5% level) evidence for us to reasonably conclude that there is a difference between the average age of  those who were killed by police who were female and the average age of those who were male and killed by police.
+
+$\textbf{ Simple Linear Regression Model}$
+```{r, echo=FALSE}
+model <- lm(age ~ pov, data = police_killings_clean)
+summary(model)
+```
+This  model tells us that the the predicted age of the person decreases by 0.11 years  when the poverty rate of the city where the killing took place goes up by 1% point.  We can conclude that  there is a negative linear association between poverty rate of the city where killing took place and the age of the person killed, if there are no confounders and poverty is the only variable. 
+
+$\textbf{CHI-Square Test for  Region and Whether or not person was armed:}$
+```{r, echo=FALSE} 
+table( police_killings_clean$weaponed,police_killings_clean$region)  
+table3<-table(police_killings_clean$weaponed,police_killings_clean$region)
+addmargins(table3)
+cst2<-chisq.test(table3)
+cst2$observed
+cst2$expected
+cst2
+```
+We have strong enough statistical evidence (at the 5% level) to conclude that the region of the killing and whether or not the person was armed when they were killed by the police are associated. 
+
+$\textbf{CHI-square Test for Race/Ethnicity and Whether or not weaponed:}$
+```{r, echo=FALSE} 
+table( police_killings_clean$weaponed,police_killings_clean$raceethnicity)  
+table2<-table(police_killings_clean$weaponed,police_killings_clean$raceethnicity)
+cst<-chisq.test(table2)
+cst$observed
+cst$expected
+cst
+addmargins(table2)
+```
+We don’t have strong enough statistical evidence (at the 5% level) to conclude that the race/ethnicity of the person  and whether or not the person was armed when they were killed police are associated. 
+
+$\textbf{Anova Test  for age and race/ethnicity:}$
+```{r}
+anova3<- aov(police_killings_clean$pov ~ police_killings_clean$raceethnicity)
+anova3
+summary(anova3)
+```
+
+We have statistically significant evidence (at the 5% level) to conclude that the at least one racial group has a different mean age.
+
+$\textbf{Anova test for race/ethnicity and poverty rate:}$
+```{r, echo=FALSE}
+anova1<- aov(police_killings_clean$age ~ police_killings_clean$raceethnicity)
+anova1
+summary(anova1)
+qplot(x=raceethnicity, y=age, data=police_killings_clean, geom="boxplot")
+```
+
+We can conclude that at least one group based on race has a statistically significant (at the 5% level) different mean poverty rate of where the killing took place.
+
+$\textbf{Multiple regression model}$
+
+```{r}
+model <- lm(age ~  gender + raceethnicity + region + weaponed, data = police_killings_clean)
+summary(model)
+```
+
+Intercept: The predicted age of a female killed by police who is black  and unarmed and killed in the east is 35.08 years old
+
+Male: The predicted age for a male killed by police is 2.045 years older than a female killed by police having adjusted for other factors  
+
+Hispanic /Latino:  The predicted age for a person who is Hispanic/Latino killed by police is predicted to be 1.765 years younger than a person who is black and killed by police having adjusted for other variables. 
+We do have evidence (at the 5% level) of a negative  linear association between a person’s age of being killed and of being Hispanic/Latino. 
+
+Other:  The predicted age for a person whose race is other killed by police is predicted to be  7.907 years older than a person who is black and killed by police having adjusted for the other variables. 
+We do have evidence (at the 5% level) of a positive linear association between a person’s age of being killed and being in the category of “other” for race.
+
+White: The predicted age for a person whose race is white killed by police is predicted to be 7.05 years older than a person who is black and killed by police having adjusted for other variables.
+We do have evidence (at the 5% level) of a positive linear association between a person’s age of being killed and of being white.
+Midwest: The predicted age for a person killed by police in the midwest is 5.5783 years younger than a person in the east who was killed by police  having adjusted for other factors. 
+We do have evidence (at the 5% level) of a negative linear association between a person’s age of being killed and of being killed in the midwest.
+
+South: The predicted age for a person killed by police in the south is 0.874 years younger than a person in the east who was killed by police  having adjusted for other factors.
+We do not have evidence (at the 5% level) of a linear association between a person’s age of being killed and of being killed in the south.
+
+West: The predicted age for a person killed by police in the south is 3.15 years younger than a person in the east who was killed by police  having adjusted for other factors.
+We do have evidence (at the 5% level) of a negative  linear association between a person’s age of being killed and of being killed in the west.
+
+Weaponed = TRUE: The predicted age for a person killed by police who was armed is 1.893 years younger than a person who was unarmed and killed by police  having adjusted for other factors.
+We do not have evidence (at the 5% level) of a linear association between a person’s age of being killed and of being armed.
+
+
+
+## Discussion
+
+ We investigated how the age of the victims involved in police killings are affected by their demographics and whether or not they were armed during that time. Using confidence intervals, the true mean age of people killed by police in the U.S. in 2015 are based on the middle-aged. This can also predict the population of middle-aged killed through 2007-2017.  This also shows that the Guardian database and the American Community Survey are showing that the majority of police killings are not the young or the elderly. Why are middle-aged adults more likely to die? It could be based on their demographics as well as many confounders. The true mean of people who were black and killed by police is slightly younger for the total population in 2015. Comparing different races/ethnicities will help us understand this interval. There is possibly no police bias in difference of mean ages and whether or not they had a weapon at the time. The police should not be targeting a specific age range but instead should be defending themselves against an armed opponent. The data is limiting in the respect of sorting the killings into whether they were justified. Even though we sorted armed as being justified and unarmed as being unjustified, there could be many more confounders in what makes a killing “justified”.
+ 
+We also did a couple of Hypothesis tests. We didn’t find any statistical evidence in the proportion  of women who were unarmed and the proportion of men who were unarmed are different. We also looked at these variables separately and found the same consistency. There was no statistical evidence when looking at the difference of age and being armed or not. This is also true when looking at the difference of age and gender. However, we would need more data to make a further analysis on police bias on the gender they shoot. We would also need more reader submissions for crowdsourcing in the Guardian and  for  the police to release more “justifiable homicides” data.
+
+Using the single linear regression model for poverty rate and age, we found a negative linear association between poverty rate of the city of where the killing took place and the age of the person killed.  We can conclude that places that have higher poverty rates, the younger in age of the person killed by police.  We do not really know why this is a trend. We do know that there are probably a lot of confounders. It might be possible that younger people, particularly in the data collected for this study, tend to live in places with higher poverty rates. It could also be that places of higher poverty rate also have higher crime rates and that affects the age of the person killed by police. Places with higher poverty rates also tend to have worst access to important resources and quality education  which could affect the age of the person killed by police. Places with higher poverty rates likely have larger minority populations. Through our data analysis, we found that race is associated with the age of the person killed. We saw this using our Anova test for poverty rate and race.  With more time and access to more data, it would have been interesting to look at how poverty rate of the city of where the killing took place is associated with  the age of the person killed after adjusting for some of these other factors.  In the future, we should explore how poverty rate is associated with these other variables included in the demographics of individuals. 
+
+After seeing a lot of unjustified killings in the news, we wanted to see what affects someone to be killed unjustifiably. We used whether or not the person was armed when they were killed to constitute justified and unjustified killings. First, we wanted to know how race affected whether or not they were more likely to be unarmed when they were killed, to see if there could have been a racial bias for unjustified police killings. We were ultimately unable to conclude that the race/ethnicity of the person  and whether or not the person was armed when they were killed by police are associated. However, this does not mean that there is no racial bias; our results were just inconclusive.  We also should not conclude that there is no  bias. We also should note that whether or not they are armed  does n  ot mean the killing was justified or unjustified. There was no data on the
+circumstances of how/why these people were killed. We also made unarmed to only indicate no weapon, disputed, or unknown but we could have included conditions such as knives that are not deadly weapons which could have changed our data.  We also wanted to see if different parts of the country had different rates of someone being killed while being  unarmed. We concluded that the region of the killing and whether or not the person was armed when they were killed by the police are associated. This means at least one region has different proportion of unarmed people being killed. This is concerning and researchers might want to look into this later on. 
+
+ Another factor, we looked into is whether or not the age of the person killed and race were associated. We were able to conclude that at least one racial group has a different mean age. Therefore, we can state that race and age are associated.  This is interesting because this signifies certain groups  possibly  live longer or die earlier and this could be evidence of bias or discrimination but we would need to look further into this to make a complete assumption.  
+ 
+ Looking at our multiple regression model for predicting age, we found out that the most significant value was whether or not the person was white. We found this intriguing because this means that white people and dying at an older age by police are associated. However, we can’t prove  causation and while our model took into account many different variables, there could be more that would affect our findings and we are using observational data. 
+ 
+When we started our statistical analysis, we kept in mind that we assumed that our results were unbiased so we could generalize our conclusions to the population. However, after examining our data and results, it came to our attention that we may have an unbiased sample. 	
+
+## Conclusion
+
+In the summer of 2014,  the data experts and bureaucrats in Washington had come to the conclusion that they could not efficiently count how many Americans are killed by police each year, so instead of finding better ways to collect data, they decided to end the program that  collected this data  (McCarthy, 2015).  Right now the U.S. Government does not have up to date information about people who die due to police or whether or not police are systematically biased. How can the U.S. know how to solve the problems with police brutality, if they don’t know what those problems are? With this in mind, we sought out using the data collected from the Guardian to better understand the population of people killed by police by looking at race of the person who died, age of the person killed by police, region where killing happened, whether or not the person was armed, and poverty rate of where the killing took place. By looking at the trends and how these different factors were associated, we hoped that we could come to a better understand of the elusive data of police killings and gain better insight into police killings in America. Our results gravitated more questions than answers. This shows the need for more unbiased data on police killings.  We were unable to fully understand the many factors that go into police killings because of the limitations of our data and while we assumed our sample was unbiased there is  chance that it was. Perhaps if there were more official records of police killings in the U.S. we would have less biased data. 
+
+
+
+
+## Sources  
+
+Bialik, Carl. “The Government Finally Has A Realistic Estimate Of Killings By Police.” FiveThirtyEight, FiveThirtyEight, 15 Dec. 2016, https://fivethirtyeight.com/features/the-government-finally-has-a-realistic-estimate-of-killings-by-police/
+
+Lartey, Jamiles. “US police killings undercounted by half, study using Guardian data finds.” The Guardian, Guardian News and Media, 11 Oct. 2017, www.theguardian.com/us-news/2017/oct/11/police-killings-counted-harvard-study.
+
+McCarthy, Tom. “The uncounted: why the US can't keep track of people killed by police.”  The Guardian, Guardian News and Media, 18, Mar. 2015, 
+https://www.theguardian.com/us-news/2015/mar/18/police-killings-government-data-count
+
+Tran, Mark. “FBI chief: 'unacceptable' that Guardian has better data on police violence.” The Guardian, Guardian News and Media, 8 Oct. 2015, www.theguardian.com/us-news/2015/oct/08/fbi-chief-says-ridiculous-guardian-washington-post-better-information-police-shootings.
+
+“About The Counted: why and how the Guardian is counting US police killings.” The Guardian, Guardian News and Media, 2016, www.theguardian.com/us-news/ng-interactive/2015/jun/01/about-the-counted.
+
+
+
